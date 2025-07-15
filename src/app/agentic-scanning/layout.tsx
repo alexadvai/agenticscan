@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, ShieldCheck, BarChart2, ScanLine, History, CalendarClock } from "lucide-react";
 import Link from "next/link";
 import { SidebarMenuLink } from "@/components/sidebar-menu-link";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function AgenticScanningLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -70,6 +71,7 @@ export default function AgenticScanningLayout({ children }: { children: React.Re
               </SheetContent>
             </Sheet>
           <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="icon" className="overflow-hidden rounded-full">
