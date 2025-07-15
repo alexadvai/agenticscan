@@ -90,13 +90,13 @@ export default function ScheduledScans() {
                                     <CalendarClock className="mr-2 h-4 w-4" />
                                     <span>{scan.frequency}</span>
                                 </div>
-                                <p className="text-sm">Next run: {' '}
+                                <div className="text-sm">Next run: {' '}
                                  {isClient ? (
-                                    format(new Date(scan.nextRun), "PPP p")
+                                    <span>{format(new Date(scan.nextRun), "PPP p")}</span>
                                  ) : (
                                     <Skeleton className="h-4 w-40 inline-block" />
                                  )}
-                                </p>
+                                </div>
                             </CardContent>
                             <CardFooter className="flex justify-end gap-2">
                                 <Button variant="ghost" size="icon"><Edit className="h-4 w-4" /></Button>
