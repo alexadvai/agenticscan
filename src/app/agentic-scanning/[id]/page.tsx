@@ -3,13 +3,13 @@ import { notFound } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, ShieldAlert, Terminal, ListChecks, Server, BrainCircuit } from 'lucide-react';
+import { ArrowLeft, ShieldAlert, Terminal, ListChecks, Server } from 'lucide-react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import type { ScanStatus, Vulnerability } from '@/lib/types';
 import RemediationSuggestions from '@/components/remediation-suggestions';
 import { format } from 'date-fns';
+import { PageHeader } from '@/components/page-header';
 
 const statusStyles: Record<ScanStatus, string> = {
     Completed: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-green-300',
@@ -35,17 +35,15 @@ export default function ScanResultDetailPage({ params }: { params: { id: string 
 
     return (
         <div className="space-y-6">
-             <Link href="/agentic-scanning?tab=results" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground">
+             <Link href="/agentic-scanning/results" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Scan Results
             </Link>
 
-            <header>
-                <h1 className="text-3xl font-bold tracking-tight">Scan Report: {result.target}</h1>
-                <p className="text-muted-foreground">
-                    {result.scanType} scan performed by {result.agent} on {format(new Date(result.createdAt), "PPP p")}
-                </p>
-            </header>
+            <PageHeader
+                title={`Scan Report: ${result.target}`}
+                description={`${result.scanType} scan performed by ${result.agent} on ${format(new Date(result.createdAt), "PPP p")}`}
+            />
 
             <div className="grid gap-6 lg:grid-cols-3">
                 <div className="lg:col-span-2 space-y-6">
