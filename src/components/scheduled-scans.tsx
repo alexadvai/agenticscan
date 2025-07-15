@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,9 +13,15 @@ import { mockScheduledScans } from "@/lib/mock-data";
 import { CalendarClock, PlusCircle, Edit, Trash2 } from "lucide-react";
 import type { ScheduledScan } from "@/lib/types";
 import { format } from 'date-fns';
+import { Skeleton } from './ui/skeleton';
 
 export default function ScheduledScans() {
     const [schedules, setSchedules] = useState<ScheduledScan[]>(mockScheduledScans);
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
 
     return (
         <div className="space-y-6">
@@ -84,7 +90,13 @@ export default function ScheduledScans() {
                                     <CalendarClock className="mr-2 h-4 w-4" />
                                     <span>{scan.frequency}</span>
                                 </div>
-                                <p className="text-sm">Next run: {format(new Date(scan.nextRun), "PPP p")}</p>
+                                <p className="text-sm">Next run: {' '}
+                                 {isClient ? (
+                                    format(new Date(scan.nextRun), "PPP p")
+                                 ) : (
+                                    <Skeleton className="h-4 w-40 inline-block" />
+                                 )}
+                                </p>
                             </CardContent>
                             <CardFooter className="flex justify-end gap-2">
                                 <Button variant="ghost" size="icon"><Edit className="h-4 w-4" /></Button>
