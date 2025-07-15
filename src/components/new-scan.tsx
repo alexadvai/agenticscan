@@ -1,7 +1,7 @@
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
-import { useEffect } from 'react';
+import { useActionState, useEffect } from 'react';
+import { useFormStatus } from 'react-dom';
 import { useToast } from "@/hooks/use-toast";
 import { startNewScan } from '@/lib/actions';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,7 +29,7 @@ function SubmitButton() {
 }
 
 export default function NewScan() {
-  const [state, formAction] = useFormState(startNewScan, initialState);
+  const [state, formAction] = useActionState(startNewScan, initialState);
   const { toast } = useToast();
 
   useEffect(() => {
