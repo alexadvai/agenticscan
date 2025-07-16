@@ -3,13 +3,15 @@ import { notFound } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, ShieldAlert, Terminal, ListChecks, Server } from 'lucide-react';
+import { ArrowLeft, ShieldAlert, Terminal, ListChecks, Server, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import type { ScanStatus, Vulnerability } from '@/lib/types';
 import RemediationSuggestions from '@/components/remediation-suggestions';
 import { format } from 'date-fns';
 import { PageHeader } from '@/components/page-header';
+import { summarizeScan } from '@/ai/flows/scan-summary';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const statusStyles: Record<ScanStatus, string> = {
     Completed: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-green-300',
@@ -26,12 +28,27 @@ const severityStyles: Record<Vulnerability['severity'], string> = {
     Informational: 'bg-gray-500/20 text-gray-500 border-gray-500/50',
 };
 
-export default function ScanResultDetailPage({ params }: { params: { id: string } }) {
+export default async function ScanResultDetailPage({ params }: { params: { id: string } }) {
     const result = mockScanResults.find(r => r.id === params.id);
 
     if (!result) {
         notFound();
     }
+    
+    // Generate summary dynamically if there's raw data
+    let summaryData;
+    if (result.findings.raw) {
+        try {
+            summaryData = await summarizeScan({ scanFindings: result.findings.raw });
+        } catch (error) {
+            console.error("Failed to generate scan summary:", error);
+            // Fallback or error handling
+            summaryData = { riskScore: -1, keyFindings: 'Could not generate summary.' };
+        }
+    } else {
+        summaryData = { riskScore: result.riskScore, keyFindings: result.summary };
+    }
+
 
     return (
         <div className="space-y-6">
@@ -54,9 +71,24 @@ export default function ScanResultDetailPage({ params }: { params: { id: string 
                         <CardContent className="grid gap-4 md:grid-cols-2 text-sm">
                             <div><strong>Target:</strong> {result.target}</div>
                             <div><strong>Status:</strong> <Badge variant="outline" className={cn(statusStyles[result.status])}>{result.status}</Badge></div>
-                            <div><strong>Risk Score:</strong> <span className="font-bold">{result.riskScore}</span></div>
-                            <div><strong>OS Guess:</strong> {result.findings.osGuess}</div>
-                            <div className="md:col-span-2"><strong>Key Findings:</strong> {result.summary}</div>
+                             {summaryData.riskScore >= 0 ? (
+                                <>
+                                    <div><strong>Risk Score:</strong> <span className="font-bold">{summaryData.riskScore}</span></div>
+                                    <div><strong>OS Guess:</strong> {result.findings.osGuess}</div>
+                                    <div className="md:col-span-2"><strong>Key Findings:</strong> {summaryData.keyFindings}</div>
+                                </>
+                            ) : (
+                                <div className="md:col-span-2">
+                                     <Alert variant="destructive">
+                                        <AlertCircle className="h-4 w-4" />
+                                        <AlertTitle>Analysis Failed</AlertTitle>
+                                        <AlertDescription>
+                                           The AI agent could not analyze the scan results. The original summary is shown below.
+                                            <p className="mt-2"><strong>Original Summary:</strong> {result.summary}</p>
+                                        </AlertDescription>
+                                    </Alert>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
 
