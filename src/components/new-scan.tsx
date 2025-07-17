@@ -1,7 +1,12 @@
+
 'use client';
 
-import { useActionState, useEffect } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useEffect } from 'react';
+import { useFormState } from 'react-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
 import { useToast } from "@/hooks/use-toast";
 import { startNewScan } from '@/lib/actions';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +17,18 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Loader2, Zap } from 'lucide-react';
 import { Textarea } from './ui/textarea';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+
+const newScanSchema = z.object({
+  target: z.string().min(1, { message: "Target is required." }),
+  mode: z.enum(["quick", "full", "stealth", "custom"]),
+  scanTypes: z.array(z.string()).refine((value) => value.some((item) => item), {
+    message: "You have to select at least one scan type.",
+  }),
+  credentials: z.string().optional(),
+});
+
+type NewScanFormValues = z.infer<typeof newScanSchema>;
 
 const initialState = {
   success: false,
@@ -19,18 +36,30 @@ const initialState = {
 };
 
 function SubmitButton() {
-  const { pending } = useFormStatus();
+  // react-hook-form's isSubmitting can be used if we switch to client-side action calls
+  // but for form actions, useFormStatus is still the way to go.
+  // We can't use useFormStatus inside the same component as useForm, so this remains separate.
   return (
-    <Button type="submit" className="w-full" disabled={pending}>
-      {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
+    <Button type="submit" className="w-full">
+      <Zap className="mr-2 h-4 w-4" />
       Start Agentic Scan
     </Button>
   );
 }
 
 export default function NewScan() {
-  const [state, formAction] = useActionState(startNewScan, initialState);
+  const [state, formAction] = useFormState(startNewScan, initialState);
   const { toast } = useToast();
+
+  const form = useForm<NewScanFormValues>({
+    resolver: zodResolver(newScanSchema),
+    defaultValues: {
+      target: "",
+      mode: "quick",
+      scanTypes: ["port", "os"],
+      credentials: "",
+    },
+  });
 
   useEffect(() => {
     if (state.message) {
@@ -39,8 +68,11 @@ export default function NewScan() {
         description: state.message,
         variant: state.success ? 'default' : 'destructive',
       });
+      if (state.success) {
+        form.reset();
+      }
     }
-  }, [state, toast]);
+  }, [state, toast, form]);
 
   return (
     <Card className="max-w-2xl mx-auto">
@@ -48,63 +80,136 @@ export default function NewScan() {
         <CardTitle>Launch a New Scan</CardTitle>
         <CardDescription>Configure and initiate a new scan with an LLM-enhanced agent.</CardDescription>
       </CardHeader>
-      <form action={formAction}>
-        <CardContent className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="target">Target</Label>
-            <Input id="target" name="target" placeholder="Enter IP, domain, or CIDR range" required />
-          </div>
-          <div className="space-y-2">
-            <Label>Scan Mode</Label>
-            <RadioGroup defaultValue="quick" name="mode" className="flex space-x-4">
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="quick" id="quick" />
-                <Label htmlFor="quick">Quick</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="full" id="full" />
-                <Label htmlFor="full">Full</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="stealth" id="stealth" />
-                <Label htmlFor="stealth">Stealth</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="custom" id="custom" />
-                <Label htmlFor="custom">Custom</Label>
-              </div>
-            </RadioGroup>
-          </div>
-          <div className="space-y-2">
-            <Label>Scan Types</Label>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex items-center space-x-2">
-                <Checkbox id="port-scan" name="scan-type" value="port" defaultChecked />
-                <Label htmlFor="port-scan">Port Scan</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="os-detection" name="scan-type" value="os" defaultChecked />
-                <Label htmlFor="os-detection">OS Detection</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="service-enum" name="scan-type" value="service" />
-                <Label htmlFor="service-enum">Service Enumeration</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox id="script-exec" name="scan-type" value="script" />
-                <Label htmlFor="script-exec">Script Execution</Label>
-              </div>
-            </div>
-          </div>
-           <div className="space-y-2">
-            <Label htmlFor="credentials">Credentials (Optional)</Label>
-            <Textarea id="credentials" name="credentials" placeholder="Provide credentials for authenticated scans, e.g., user:pass@ssh" rows={3}/>
-          </div>
-        </CardContent>
-        <CardFooter>
-          <SubmitButton />
-        </CardFooter>
-      </form>
+      <Form {...form}>
+        <form action={formAction} className="space-y-6">
+          <CardContent className="space-y-6">
+            <FormField
+              control={form.control}
+              name="target"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Target</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter IP, domain, or CIDR range" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="mode"
+              render={({ field }) => (
+                <FormItem className="space-y-3">
+                  <FormLabel>Scan Mode</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex space-x-4"
+                    >
+                      <FormItem className="flex items-center space-x-2">
+                        <FormControl><RadioGroupItem value="quick" id="quick" /></FormControl>
+                        <FormLabel htmlFor="quick" className="font-normal">Quick</FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-2">
+                        <FormControl><RadioGroupItem value="full" id="full" /></FormControl>
+                        <FormLabel htmlFor="full" className="font-normal">Full</FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-2">
+                        <FormControl><RadioGroupItem value="stealth" id="stealth" /></FormControl>
+                        <FormLabel htmlFor="stealth" className="font-normal">Stealth</FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-2">
+                        <FormControl><RadioGroupItem value="custom" id="custom" /></FormControl>
+                        <FormLabel htmlFor="custom" className="font-normal">Custom</FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="scanTypes"
+              render={() => (
+                <FormItem>
+                  <div className="mb-4">
+                    <FormLabel>Scan Types</FormLabel>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { id: 'port', label: 'Port Scan' },
+                    { id: 'os', label: 'OS Detection' },
+                    { id: 'service', label: 'Service Enumeration' },
+                    { id: 'script', label: 'Script Execution' },
+                  ].map((item) => (
+                    <FormField
+                      key={item.id}
+                      control={form.control}
+                      name="scanTypes"
+                      render={({ field }) => {
+                        return (
+                          <FormItem
+                            key={item.id}
+                            className="flex flex-row items-start space-x-3 space-y-0"
+                          >
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes(item.id)}
+                                onCheckedChange={(checked) => {
+                                  return checked
+                                    ? field.onChange([...(field.value || []), item.id])
+                                    : field.onChange(
+                                        field.value?.filter(
+                                          (value) => value !== item.id
+                                        )
+                                      )
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              {item.label}
+                            </FormLabel>
+                          </FormItem>
+                        )
+                      }}
+                    />
+                  ))}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="credentials"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Credentials (Optional)</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="Provide credentials for authenticated scans, e.g., user:pass@ssh" rows={3} {...field}/>
+                  </FormControl>
+                  <FormDescription>
+                    Credentials for authenticated scans, if applicable.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </CardContent>
+          <CardFooter>
+             <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
+                Start Agentic Scan
+            </Button>
+          </CardFooter>
+        </form>
+      </Form>
     </Card>
   );
 }
