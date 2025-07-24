@@ -4,12 +4,13 @@ Agentic Scan is a modern, web-based security scanning dashboard that leverages t
 
 ## ✨ Features
 
-- **Scan Dashboard**: An at-a-glance overview of your security posture, including key metrics and weekly scan activity.
-- **New Scans**: Easily configure and launch new scans with various options like scan mode (Quick, Full, Stealth), scan types (Port Scan, OS Detection), and credentials for authenticated scans.
+- **Dynamic Scan Dashboard**: An at-a-glance overview of your security posture, with dynamically generated stats and a weekly scan activity chart.
+- **Agentic New Scans**: Easily configure and launch new scans. The system is designed to allow an AI agent to interpret scan parameters and make intelligent decisions.
 - **Detailed Scan Reports**: Drill down into individual scan results to see a summary, risk score, open ports, detected vulnerabilities, and the raw scan output.
-- **AI Remediation Advisor**: Utilizes Genkit and Google's Gemini model to analyze scan findings and provide actionable remediation suggestions.
-- **Scheduled Scans**: Automate your security assessments by scheduling recurring scans.
-- **Responsive Design**: A clean, responsive interface built with ShadCN UI and Tailwind CSS that works seamlessly across devices.
+- **AI-Powered Analysis & Remediation**: Utilizes Genkit and Google's Gemini model to analyze raw scan data, generate a summary and risk score, and provide actionable remediation suggestions.
+- **Sortable Results**: The scan results table is fully interactive, allowing you to sort by target, risk score, or date.
+- **Scheduled Scans**: Automate your security assessments by scheduling recurring scans (UI only).
+- **Responsive & Themed UI**: A clean, responsive interface built with ShadCN UI, Tailwind CSS, and Next.js, featuring both light and dark modes.
 
 ## 🚀 Tech Stack
 
@@ -18,6 +19,7 @@ Agentic Scan is a modern, web-based security scanning dashboard that leverages t
 - **UI Components**: [ShadCN UI](https://ui.shadcn.com/)
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Form Management**: [React Hook Form](https://react-hook-form.com/) & [Zod](https://zod.dev/) for robust validation.
 
 ## Getting Started
 
@@ -36,5 +38,7 @@ npm run dev
 This will run the Next.js application. You will also need to run the Genkit development server in a separate terminal to enable the AI features:
 
 ```bash
-npm run genkit:dev
+genkit start
 ```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.

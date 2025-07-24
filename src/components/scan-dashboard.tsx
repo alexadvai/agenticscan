@@ -2,27 +2,47 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Target, ShieldAlert, CheckCircle2, Clock, ArrowUp, ArrowDown } from 'lucide-react';
-import type { DashboardStat } from '@/lib/types';
+import { Target, ShieldAlert, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
+import type { DashboardStat, ScanResult } from '@/lib/types';
+import { mockScanResults } from "@/lib/mock-data";
+import { subDays, format, isWithinInterval } from "date-fns";
 
-const stats: DashboardStat[] = [
-    { title: "High-Risk Assets", value: "12", icon: ShieldAlert, change: "+2", changeType: 'increase' },
-    { title: "Total Targets", value: "348", icon: Target, change: "+15", changeType: 'increase' },
-    { title: "Scans This Week", value: "89", icon: CheckCircle2, change: "-5", changeType: 'decrease' },
-    { title: "Pending Scans", value: "3", icon: Clock },
-];
+// Function to generate dashboard data from scan results
+const generateDashboardData = (scans: ScanResult[]) => {
+    const highRiskAssets = scans.filter(s => s.riskScore > 75).length;
+    const totalTargets = new Set(scans.map(s => s.target)).size;
+    
+    const now = new Date();
+    const oneWeekAgo = subDays(now, 7);
+    
+    const scansThisWeek = scans.filter(s => isWithinInterval(new Date(s.createdAt), { start: oneWeekAgo, end: now })).length;
+    const pendingScans = scans.filter(s => s.status === 'Pending' || s.status === 'Running').length;
 
-const weeklyScansData = [
-  { name: 'Mon', scans: 4, risks: 2 },
-  { name: 'Tue', scans: 3, risks: 3 },
-  { name: 'Wed', scans: 2, risks: 1 },
-  { name: 'Thu', scans: 2.7, risks: 2 },
-  { name: 'Fri', scans: 1.8, risks: 1 },
-  { name: 'Sat', scans: 2.3, risks: 3 },
-  { name: 'Sun', scans: 3.4, risks: 1 },
-];
+    const stats: DashboardStat[] = [
+        { title: "High-Risk Assets", value: String(highRiskAssets), icon: ShieldAlert },
+        { title: "Total Targets", value: String(totalTargets), icon: Target },
+        { title: "Scans This Week", value: String(scansThisWeek), icon: CheckCircle2 },
+        { title: "Active Scans", value: String(pendingScans), icon: Clock },
+    ];
+
+    const weeklyScansData = Array.from({ length: 7 }).map((_, i) => {
+        const day = subDays(now, 6 - i);
+        const dayKey = format(day, 'E'); // Mon, Tue, etc.
+        const scansOnDay = scans.filter(s => format(new Date(s.createdAt), 'E') === dayKey && isWithinInterval(new Date(s.createdAt), { start: oneWeekAgo, end: now }));
+        return {
+            name: dayKey,
+            scans: scansOnDay.length,
+            risks: scansOnDay.filter(s => s.riskScore > 50).length,
+        };
+    });
+
+    return { stats, weeklyScansData };
+};
+
 
 export default function ScanDashboard() {
+  const { stats, weeklyScansData } = generateDashboardData(mockScanResults);
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -35,12 +55,8 @@ export default function ScanDashboard() {
             <CardContent>
               <div className="text-2xl font-bold">{stat.value}</div>
               {stat.change && (
-                <p className="text-xs text-muted-foreground flex items-center">
-                    <span className={`flex items-center mr-1 ${stat.changeType === 'increase' ? 'text-red-500' : 'text-green-500'}`}>
-                        {stat.changeType === 'increase' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-                        {stat.change}
-                    </span>
-                    from last week
+                <p className="text-xs text-muted-foreground">
+                  {stat.change} from last week
                 </p>
               )}
             </CardContent>
@@ -67,7 +83,7 @@ export default function ScanDashboard() {
                   />
                   <Legend iconSize={10} />
                   <Bar dataKey="scans" fill="hsl(var(--primary))" name="Total Scans" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="risks" fill="hsl(var(--accent))" name="New Risks" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="risks" fill="hsl(var(--destructive))" name="New Risks" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
