@@ -1,3 +1,4 @@
+
 import { SidebarProvider, Sidebar, SidebarInset } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,14 @@ import { Menu, ShieldCheck, BarChart2, ScanLine, History, CalendarClock } from "
 import Link from "next/link";
 import { SidebarMenuLink } from "@/components/sidebar-menu-link";
 import { ThemeToggle } from "@/components/theme-toggle";
+
+const navItems = [
+  { href: "/agentic-scanning", icon: <BarChart2 className="h-4 w-4" />, mobileIcon: <BarChart2 className="h-5 w-5" />, label: "Dashboard" },
+  { href: "/agentic-scanning/new", icon: <ScanLine className="h-4 w-4" />, mobileIcon: <ScanLine className="h-5 w-5" />, label: "New Scan" },
+  { href: "/agentic-scanning/results", icon: <History className="h-4 w-4" />, mobileIcon: <History className="h-5 w-5" />, label: "Scan Results" },
+  { href: "/agentic-scanning/scheduled", icon: <CalendarClock className="h-4 w-4" />, mobileIcon: <CalendarClock className="h-5 w-5" />, label: "Scheduled Scans" },
+];
+
 
 export default function AgenticScanningLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -21,18 +30,11 @@ export default function AgenticScanningLayout({ children }: { children: React.Re
           </div>
           <div className="flex-1">
             <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-              <SidebarMenuLink href="/agentic-scanning" icon={<BarChart2 className="h-4 w-4" />}>
-                Dashboard
-              </SidebarMenuLink>
-              <SidebarMenuLink href="/agentic-scanning/new" icon={<ScanLine className="h-4 w-4" />}>
-                New Scan
-              </SidebarMenuLink>
-              <SidebarMenuLink href="/agentic-scanning/results" icon={<History className="h-4 w-4" />}>
-                Scan Results
-              </SidebarMenuLink>
-              <SidebarMenuLink href="/agentic-scanning/scheduled" icon={<CalendarClock className="h-4 w-4" />}>
-                Scheduled Scans
-              </SidebarMenuLink>
+              {navItems.map(item => (
+                <SidebarMenuLink key={item.href} href={item.href} icon={item.icon}>
+                  {item.label}
+                </SidebarMenuLink>
+              ))}
             </nav>
           </div>
         </div>
@@ -55,18 +57,11 @@ export default function AgenticScanningLayout({ children }: { children: React.Re
                     <ShieldCheck className="h-5 w-5 transition-all group-hover:scale-110" />
                     <span className="sr-only">Agentic Scan</span>
                   </Link>
-                  <SidebarMenuLink href="/agentic-scanning" icon={<BarChart2 className="h-5 w-5" />}>
-                    Dashboard
-                  </SidebarMenuLink>
-                  <SidebarMenuLink href="/agentic-scanning/new" icon={<ScanLine className="h-5 w-5" />}>
-                    New Scan
-                  </SidebarMenuLink>
-                  <SidebarMenuLink href="/agentic-scanning/results" icon={<History className="h-5 w-5" />}>
-                    Scan Results
-                  </SidebarMenuLink>
-                  <SidebarMenuLink href="/agentic-scanning/scheduled" icon={<CalendarClock className="h-5 w-5" />}>
-                    Scheduled Scans
-                  </SidebarMenuLink>
+                  {navItems.map(item => (
+                    <SidebarMenuLink key={item.href} href={item.href} icon={item.mobileIcon} sheetMode>
+                      {item.label}
+                    </SidebarMenuLink>
+                  ))}
                 </nav>
               </SheetContent>
             </Sheet>
