@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -6,9 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import Link from 'next/link';
 import { cn } from "@/lib/utils";
 import type { ScanResult, ScanStatus } from '@/lib/types';
-import { formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, isAfter, isBefore, parseISO } from 'date-fns';
 import { Button } from './ui/button';
-import { ArrowUpDown } from 'lucide-react';
+import { ArrowUpDown, Calendar as CalendarIcon } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Calendar } from './ui/calendar';
+import type { DateRange } from 'react-day-picker';
 
 type SortKey = 'target' | 'riskScore' | 'createdAt';
 type SortDirection = 'asc' | 'desc';
@@ -36,11 +40,20 @@ function RiskBadge({ score }: { score: number }) {
 
 export default function ScanResultsTable({ results }: { results: ScanResult[] }) {
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection }>({ key: 'createdAt', direction: 'desc' });
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
-  const sortedResults = useMemo(() => {
-    let sortableItems = [...results];
+  const filteredAndSortedResults = useMemo(() => {
+    let filteredItems = [...results];
+
+    if (dateRange?.from) {
+        filteredItems = filteredItems.filter(item => isAfter(parseISO(item.createdAt), dateRange.from!));
+    }
+    if (dateRange?.to) {
+        filteredItems = filteredItems.filter(item => isBefore(parseISO(item.createdAt), dateRange.to!));
+    }
+
     if (sortConfig !== null) {
-      sortableItems.sort((a, b) => {
+      filteredItems.sort((a, b) => {
         if (a[sortConfig.key] < b[sortConfig.key]) {
           return sortConfig.direction === 'asc' ? -1 : 1;
         }
@@ -50,8 +63,8 @@ export default function ScanResultsTable({ results }: { results: ScanResult[] })
         return 0;
       });
     }
-    return sortableItems;
-  }, [results, sortConfig]);
+    return filteredItems;
+  }, [results, sortConfig, dateRange]);
 
   const requestSort = (key: SortKey) => {
     let direction: SortDirection = 'asc';
@@ -61,77 +74,107 @@ export default function ScanResultsTable({ results }: { results: ScanResult[] })
     setSortConfig({ key, direction });
   };
 
-  const getSortIndicator = (key: SortKey) => {
-    if (sortConfig.key !== key) {
-        return <ArrowUpDown className="ml-2 h-4 w-4 opacity-30" />;
-    }
-    if (sortConfig.direction === 'asc') {
-        return <ArrowUpDown className="ml-2 h-4 w-4" />;
-    }
-    return <ArrowUpDown className="ml-2 h-4 w-4" />; // Arrow direction is handled by icon itself if needed, keeping it simple
-  };
+  const SortableHeader = ({ sortKey, children }: { sortKey: SortKey, children: React.ReactNode }) => (
+    <Button variant="ghost" onClick={() => requestSort(sortKey)}>
+      {children}
+      <ArrowUpDown className={cn("ml-2 h-4 w-4", sortConfig.key !== sortKey && "opacity-30")} />
+    </Button>
+  );
 
   return (
-    <div className="rounded-lg border overflow-hidden">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>
-              <Button variant="ghost" onClick={() => requestSort('target')}>
-                Target
-                {getSortIndicator('target')}
-              </Button>
-            </TableHead>
-            <TableHead className="hidden sm:table-cell">Scan Type</TableHead>
-            <TableHead className="hidden md:table-cell">Agent</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>
-               <Button variant="ghost" onClick={() => requestSort('riskScore')}>
-                Risk Score
-                {getSortIndicator('riskScore')}
-              </Button>
-            </TableHead>
-            <TableHead className="hidden lg:table-cell">
-              <Button variant="ghost" onClick={() => requestSort('createdAt')}>
-                Finished
-                {getSortIndicator('createdAt')}
-              </Button>
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sortedResults.length > 0 ? (
-            sortedResults.map((result) => (
-              <TableRow key={result.id} className="cursor-pointer hover:bg-muted/80">
-                <TableCell className="font-medium">
-                    <Link href={`/agentic-scanning/${result.id}`} className="hover:underline">
-                        {result.target}
-                    </Link>
-                </TableCell>
-                <TableCell className="hidden sm:table-cell">{result.scanType}</TableCell>
-                <TableCell className="hidden md:table-cell">{result.agent}</TableCell>
-                <TableCell>
-                  <Badge variant="outline" className={cn(statusStyles[result.status])}>
-                    {result.status}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {result.riskScore > 0 ? <RiskBadge score={result.riskScore} /> : '-'}
-                </TableCell>
-                <TableCell className="hidden lg:table-cell">
-                  {formatDistanceToNow(new Date(result.createdAt), { addSuffix: true })}
+    <div className="space-y-4">
+      <div className="flex items-center gap-2">
+         <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              id="date"
+              variant={"outline"}
+              className={cn(
+                "w-[300px] justify-start text-left font-normal",
+                !dateRange && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              {dateRange?.from ? (
+                dateRange.to ? (
+                  <>
+                    {format(dateRange.from, "LLL dd, y")} -{" "}
+                    {format(dateRange.to, "LLL dd, y")}
+                  </>
+                ) : (
+                  format(dateRange.from, "LLL dd, y")
+                )
+              ) : (
+                <span>Filter by date</span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              initialFocus
+              mode="range"
+              defaultMonth={dateRange?.from}
+              selected={dateRange}
+              onSelect={setDateRange}
+              numberOfMonths={2}
+            />
+          </PopoverContent>
+        </Popover>
+        { (dateRange?.from || dateRange?.to) && <Button variant="ghost" onClick={() => setDateRange(undefined)}>Reset</Button>}
+      </div>
+
+      <div className="rounded-lg border overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>
+                <SortableHeader sortKey="target">Target</SortableHeader>
+              </TableHead>
+              <TableHead className="hidden sm:table-cell">Scan Type</TableHead>
+              <TableHead className="hidden md:table-cell">Agent</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>
+                 <SortableHeader sortKey="riskScore">Risk Score</SortableHeader>
+              </TableHead>
+              <TableHead className="hidden lg:table-cell">
+                <SortableHeader sortKey="createdAt">Finished</SortableHeader>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredAndSortedResults.length > 0 ? (
+              filteredAndSortedResults.map((result) => (
+                <TableRow key={result.id} className="cursor-pointer hover:bg-muted/80">
+                  <TableCell className="font-medium">
+                      <Link href={`/agentic-scanning/${result.id}`} className="hover:underline">
+                          {result.target}
+                      </Link>
+                  </TableCell>
+                  <TableCell className="hidden sm:table-cell">{result.scanType}</TableCell>
+                  <TableCell className="hidden md:table-cell">{result.agent}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={cn(statusStyles[result.status])}>
+                      {result.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {result.riskScore > 0 ? <RiskBadge score={result.riskScore} /> : '-'}
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    {formatDistanceToNow(new Date(result.createdAt), { addSuffix: true })}
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={6} className="h-24 text-center">
+                  No scan results found for the selected criteria.
                 </TableCell>
               </TableRow>
-            ))
-          ) : (
-            <TableRow>
-              <TableCell colSpan={6} className="h-24 text-center">
-                No scan results found.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }
