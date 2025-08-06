@@ -35,18 +35,6 @@ const initialState = {
   message: '',
 };
 
-function SubmitButton() {
-  // react-hook-form's isSubmitting can be used if we switch to client-side action calls
-  // but for form actions, useFormStatus is still the way to go.
-  // We can't use useFormStatus inside the same component as useForm, so this remains separate.
-  return (
-    <Button type="submit" className="w-full">
-      <Zap className="mr-2 h-4 w-4" />
-      Start Agentic Scan
-    </Button>
-  );
-}
-
 export default function NewScan() {
   const [state, formAction] = useActionState(startNewScan, initialState);
   const { toast } = useToast();
