@@ -14,10 +14,10 @@ import { summarizeScan } from '@/ai/flows/scan-summary';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const statusStyles: Record<ScanStatus, string> = {
-    Completed: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 border-green-300',
-    Pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 border-yellow-300',
-    Running: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border-blue-300',
-    Error: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border-red-300',
+    Completed: 'bg-green-500/10 text-green-700 dark:bg-green-500/20 dark:text-green-300 border-green-500/20',
+    Pending: 'bg-yellow-500/10 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-300 border-yellow-500/20',
+    Running: 'bg-blue-500/10 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300 border-blue-500/20',
+    Error: 'bg-destructive/10 text-destructive dark:bg-destructive/20 border-destructive/20',
 };
 
 const severityStyles: Record<Vulnerability['severity'], string> = {
